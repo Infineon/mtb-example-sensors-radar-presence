@@ -37,18 +37,48 @@
 /*******************************************************************************
  * Macros
  ******************************************************************************/
+
+#ifdef TARGET_CYSBSYSKIT_DEV_01
 /* Pin number designated for LED RED */
 #define LED_RGB_RED (CYBSP_GPIOA0)
 /* Pin number designated for LED GREEN */
 #define LED_RGB_GREEN (CYBSP_GPIOA1)
 /* Pin number designated for LED BLUE */
 #define LED_RGB_BLUE (CYBSP_GPIOA2)
+/* Pin number designated for MISO PIN */
+#define CYBSP_RADAR_SPI_MISO (CYBSP_SPI_MISO)
+/* Pin number designated for MOSI PIN */
+#define CYBSP_RADAR_SPI_MOSI (CYBSP_SPI_MOSI)
+/* Pin number designated for CLK PIN */
+#define CYBSP_RADAR_SPI_CLK (CYBSP_SPI_CLK)
+/* Pin number designated for CS PIN */
+#define CYBSP_RADAR_SPI_CS (CYBSP_SPI_CS)
+/* Pin number designated for RESET PIN */
+#define CYBSP_RADAR_RST (CYBSP_GPIO11)
+/* Pin number designated for EN_LDO PIN */
+#define CYBSP_RADAR_EN_LDO (CYBSP_GPIO5)
+/* Pin number designated for IRQ PIN */
+#define CYBSP_RADAR_IRQ (CYBSP_GPIO10)
+#endif
+
+#ifdef TARGET_KIT_BGT60TR13C_EMBEDD
+/* Pin number designated for LED RED */
+#define LED_RGB_RED (CYBSP_LED_RGB_RED)
+/* Pin number designated for LED GREEN */
+#define LED_RGB_GREEN (CYBSP_LED_RGB_GREEN)
+/* Pin number designated for LED BLUE */
+#define LED_RGB_BLUE (CYBSP_LED_RGB_BLUE)
+#endif
+
 /* LED off */
 #define LED_STATE_OFF (0U)
 /* LED on */
 #define LED_STATE_ON (1U)
 /* RADAR sensor SPI frequency */
-#define SPI_FREQUENCY (25000000UL)
+#define SPI_FREQUENCY (20000000UL)
+
+/* Delay between invocations of processing function in main loop */
+#define RADAR_SENSING_PROCESS_DELAY (5)
 
 /*******************************************************************************
  * Global Variables
@@ -193,7 +223,7 @@ void radar_task(cy_thread_arg_t arg)
         CY_ASSERT(0);
     }
 
-    result = cyhal_gpio_init(LED_RGB_GREEN, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, LED_STATE_OFF);
+    result = cyhal_gpio_init(LED_RGB_GREEN, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, LED_STATE_ON);
     if (result != CY_RSLT_SUCCESS)
     {
         CY_ASSERT(0);
@@ -209,10 +239,10 @@ void radar_task(cy_thread_arg_t arg)
 
     mtb_radar_sensing_hw_cfg_t hw_cfg =
     {
-        .spi_cs = CYBSP_SPI_CS,
-        .reset = CYBSP_GPIO11,
-        .ldo_en = CYBSP_GPIO5,
-        .irq = CYBSP_GPIO10,
+        .spi_cs = CYBSP_RADAR_SPI_CS,
+        .reset = CYBSP_RADAR_RST,
+        .ldo_en = CYBSP_RADAR_EN_LDO,
+        .irq = CYBSP_RADAR_IRQ,
         .spi = &mSPI
     };
 
@@ -245,19 +275,19 @@ void radar_task(cy_thread_arg_t arg)
     }
 
     /* Configure SPI interface */
-    if (cyhal_spi_init(hw_cfg.spi, CYBSP_SPI_MOSI, CYBSP_SPI_MISO, CYBSP_SPI_CLK, NC, NULL, 8,
+    if (cyhal_spi_init(hw_cfg.spi, CYBSP_RADAR_SPI_MOSI, CYBSP_RADAR_SPI_MISO, CYBSP_RADAR_SPI_CLK, NC, NULL, 8,
                        CYHAL_SPI_MODE_00_MSB, false) != CY_RSLT_SUCCESS )
     {
         CY_ASSERT(0);
     }
 
     /* Reduce drive strength to improve EMI */
-    Cy_GPIO_SetSlewRate(CYHAL_GET_PORTADDR(CYBSP_SPI_MOSI), CYHAL_GET_PIN(CYBSP_SPI_MOSI), CY_GPIO_SLEW_FAST);
-    Cy_GPIO_SetDriveSel(CYHAL_GET_PORTADDR(CYBSP_SPI_MOSI), CYHAL_GET_PIN(CYBSP_SPI_MOSI), CY_GPIO_DRIVE_1_8);
-    Cy_GPIO_SetSlewRate(CYHAL_GET_PORTADDR(CYBSP_SPI_CLK), CYHAL_GET_PIN(CYBSP_SPI_CLK), CY_GPIO_SLEW_FAST);
-    Cy_GPIO_SetDriveSel(CYHAL_GET_PORTADDR(CYBSP_SPI_CLK), CYHAL_GET_PIN(CYBSP_SPI_CLK), CY_GPIO_DRIVE_1_8);  
+    Cy_GPIO_SetSlewRate(CYHAL_GET_PORTADDR(CYBSP_RADAR_SPI_MOSI), CYHAL_GET_PIN(CYBSP_RADAR_SPI_MOSI), CY_GPIO_SLEW_FAST);
+    Cy_GPIO_SetDriveSel(CYHAL_GET_PORTADDR(CYBSP_RADAR_SPI_MOSI), CYHAL_GET_PIN(CYBSP_RADAR_SPI_MOSI), CY_GPIO_DRIVE_1_8);
+    Cy_GPIO_SetSlewRate(CYHAL_GET_PORTADDR(CYBSP_RADAR_SPI_CLK), CYHAL_GET_PIN(CYBSP_RADAR_SPI_CLK), CY_GPIO_SLEW_FAST);
+    Cy_GPIO_SetDriveSel(CYHAL_GET_PORTADDR(CYBSP_RADAR_SPI_CLK), CYHAL_GET_PIN(CYBSP_RADAR_SPI_CLK), CY_GPIO_DRIVE_1_8);  
 
-    /* Set the data rate to 25 Mbps */
+    /* Set the data rate to 20 Mbps */
     if (cyhal_spi_set_frequency(hw_cfg.spi, SPI_FREQUENCY) != CY_RSLT_SUCCESS)
     {
         CY_ASSERT(0);
@@ -268,7 +298,7 @@ void radar_task(cy_thread_arg_t arg)
     if (mtb_radar_sensing_init(&sensing_context, &hw_cfg, MTB_RADAR_SENSING_MASK_PRESENCE_EVENTS) != MTB_RADAR_SENSING_SUCCESS)
     {
         printf("ifx_radar_sensing_init error - Radar Wingboard not connected?\n");
-        printf("Exiting radar_counter_task task\n");
+        printf("Exiting radar task\n");
         // exit current thread (suspend)
         cy_rtos_exit_thread();
     }
@@ -325,13 +355,13 @@ void radar_task(cy_thread_arg_t arg)
 
     for (;;)
     {
-        /* Process data acquired from radar every 2ms */
+        /* Process data acquired from radar every 5ms */
         if (mtb_radar_sensing_process(&sensing_context, ifx_currenttime()) != MTB_RADAR_SENSING_SUCCESS)
         {
             printf("mtb_radar_sensing_process error\n");
             CY_ASSERT(0);
         }
-        vTaskDelay(MTB_RADAR_SENSING_PROCESS_DELAY);
+        vTaskDelay(RADAR_SENSING_PROCESS_DELAY);
     }
 }
 

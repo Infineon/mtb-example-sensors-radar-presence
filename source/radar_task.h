@@ -7,7 +7,7 @@
 ** Related Document: See README.md
 **
 ** ===========================================================================
-** Copyright (C) 2021 Infineon Technologies AG. All rights reserved.
+** Copyright (C) 2022 Infineon Technologies AG. All rights reserved.
 ** ===========================================================================
 **
 ** ===========================================================================

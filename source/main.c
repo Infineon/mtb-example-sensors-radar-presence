@@ -4,7 +4,7 @@
 ** Description: This is the main file for presence detection example project.
 **
 ** ===========================================================================
-** Copyright (C) 2021 Infineon Technologies AG. All rights reserved.
+** Copyright (C) 2022 Infineon Technologies AG. All rights reserved.
 ** ===========================================================================
 **
 ** ===========================================================================
@@ -106,6 +106,7 @@ int main(void)
     printf("https://github.com/Infineon/\n\n"
            "Code-Examples-for-ModusToolbox-Software\n\n");
 
+#ifdef TARGET_CYSBSYSKIT_DEV_01
     /* Initialize the User LED */
     result = cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT,
                              CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_OFF);
@@ -113,6 +114,7 @@ int main(void)
     {
         CY_ASSERT(0);
     }
+#endif
 
     /* Initialize timer to toggle the CYBSP_USER_LED that indicates system start up status */
     timer_init();
@@ -225,8 +227,10 @@ static void isr_timer(void *callback_arg, cyhal_timer_event_t event)
     (void) callback_arg;
     (void) event;
 
+#ifdef TARGET_CYSBSYSKIT_DEV_01
     /* Invert the USER LED state */
      cyhal_gpio_toggle(CYBSP_USER_LED);
+#endif
 }
 
 /* [] END OF FILE */

@@ -5,7 +5,7 @@
 ** for presence detection application.
 **
 ** ===========================================================================
-** Copyright (C) 2021 Infineon Technologies AG. All rights reserved.
+** Copyright (C) 2022 Infineon Technologies AG. All rights reserved.
 ** ===========================================================================
 **
 ** ===========================================================================
@@ -210,39 +210,39 @@ void radar_presence_terminal_ui(cy_thread_arg_t arg)
     char value[IFX_RADAR_SENSING_VALUE_MAXLENGTH];
     uint8_t rx_value;
 
-    /* Check if a key was pressed */
-    while (cyhal_uart_getc(&cy_retarget_io_uart_obj, &rx_value, 0) == CY_RSLT_SUCCESS)
+    for (;;)
     {
-        switch ((char)rx_value)
+        /* Check if a key was pressed */
+        if (cyhal_uart_getc(&cy_retarget_io_uart_obj, &rx_value, 0) == CY_RSLT_SUCCESS)
         {
-            // menu
-            case '?':
-                terminal_ui_menu();
-                break;
-            // presence range max
-            case 'r':
-                printf("Enter range [0.66-10.2]m, press enter\n");
-                terminal_ui_readline(&cy_retarget_io_uart_obj, value, IFX_RADAR_SENSING_VALUE_MAXLENGTH);
+            switch ((char)rx_value)
+            {
+                // menu
+                case '?':
+                    terminal_ui_menu();
+                    break;
+                // presence range max
+                case 'r':
+                    printf("Enter range [0.66-10.2]m, press enter\n");
+                    terminal_ui_readline(&cy_retarget_io_uart_obj, value, IFX_RADAR_SENSING_VALUE_MAXLENGTH);
 
-                result = mtb_radar_sensing_set_parameter(&sensing_context, "radar_presence_range_max", value);
-                terminal_ui_print_result(result);
+                    result = mtb_radar_sensing_set_parameter(&sensing_context, "radar_presence_range_max", value);
+                    terminal_ui_print_result(result);
 
-                break;
-            // sensitivity
-            case 's':
-                printf("Set Sensitivity: 'high', 'medium' or 'low'\n");
-                terminal_ui_readline(&cy_retarget_io_uart_obj, value, IFX_RADAR_SENSING_VALUE_MAXLENGTH);
+                    break;
+                // sensitivity
+                case 's':
+                    printf("Set Sensitivity: 'high', 'medium' or 'low'\n");
+                    terminal_ui_readline(&cy_retarget_io_uart_obj, value, IFX_RADAR_SENSING_VALUE_MAXLENGTH);
 
-                result = mtb_radar_sensing_set_parameter(&sensing_context, "radar_presence_sensitivity", value);
-                terminal_ui_print_result(result);
+                    result = mtb_radar_sensing_set_parameter(&sensing_context, "radar_presence_sensitivity", value);
+                    terminal_ui_print_result(result);
 
-                break;
-            default:
-                terminal_ui_info();
+                    break;
+                default:
+                    terminal_ui_info();
+            }
+            rx_value = 0;
         }
-        rx_value = 0;
     }
-    printf("Exiting terminal ui\n");
-    /* Exit current thread (suspend) */
-    (void)cy_rtos_exit_thread();
 }
